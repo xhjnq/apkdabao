@@ -1,0 +1,47 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Rename main archive to match case
+      run: mv a6403a5b2.zip A6403A5B2.ZIP
+
+    - name: Extract all volumes (main zip + Z01~Z23)
+      run: 7z x A6403A5B2.ZIP -o./source   # 解压到 source 目录
+
+    - name: List extracted files (for debugging)
+      run: ls -la ./source
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x ./source/gradlew   # 如果 gradlew 在 source 下
+
+    - name: Build Debug APK
+      run: |
+        cd ./source
+        ./gradlew assembleDebug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug
+        path: ./source/app/build/outputs/apk/debug/*.apk
